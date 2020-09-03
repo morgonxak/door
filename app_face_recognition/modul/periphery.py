@@ -16,6 +16,10 @@ import time
 
 class periphery(threading.Thread):
     def __init__(self, openTimeOut=3):
+        '''
+
+        :param openTimeOut: Время открытия двери после нажатия кнопки или получения сигнала на открытия двери
+        '''
         super().__init__()
 
         self.openTimeOut = openTimeOut

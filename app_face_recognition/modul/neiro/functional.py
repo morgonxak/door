@@ -1,3 +1,6 @@
+'''
+Модуль распознования функционал
+'''
 import numpy as np
 import glob
 import matplotlib.pyplot as plt
