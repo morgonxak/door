@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script
+      src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+      crossorigin="anonymous">
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+
+</head>
+<body>
+  <div class="container">
+      <div class="video__container">
+          <div class="video__bbox"></div>
+        <video autoplay playsinline class="handsome"></video>
+      </div>
+  </div>
+  <canvas id="paint" style="display: none;"></canvas>
+  <div class="strip"></div>
+
+  <script>
+      const video = document.querySelector('.handsome');
+      const canvas = document.querySelector('#paint');
+      const ctx = canvas.getContext('2d');
+
+async function go() {
+
+  const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+  video.srcObject = stream;
+}
+
+function pullServer(data) {
+//Отправка на сервер
+  let xhr = new XMLHttpRequest();
+  xhr.open('POST', 'http://127.0.0.1:5000/pull/');
+  xhr.setRequestHeader('Content-Type', 'application/json');
+
+  xhr.addEventListener('readystatechange', function() {
+                        //Проверим состояние запроса, нас интересует случай когда он завершен ( DONE )
+                        if (xhr.readyState === 4) {
+                            //Дальше проверим какой код ответа нам выдал сервер
+                            if (xhr.status === 200) {
+                                //Если попали сюда, значит можно выполнить функцию, которую вам нужно
+                                //callback();
+
+                            }
+                        }
+                    }, false);
+
+   xhr.send(JSON.stringify(data));
+
+}
+
+function takePhoto() {
+  //Сделать снимок и отправить изобрадения на сервер
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+  const data = canvas.toDataURL('image/png');
+  pullServer(data);
+
+}
+
+// function showWindow_approved()
+
+
+setInterval(takePhoto, 200);
+
+
+go().catch(err => {
+  alert(err.message);
+});
+
+let kWVideo = $('.video__container').width()/640,
+    kHVideo = $('.video__container').height()/480;
+ setTimeout(() => {
+    kWVideo = $('.video__container').width()/640,
+    kHVideo = $('.video__container').height()/480;
+    //  kWVideo = 1
+    //  kHVideo = 1
+          console.log($('video').innerWidth(), $('video').innerHeight())
+ }, 500)
+  setInterval(function() {
+
+    $.get('http://127.0.0.1:5000/get_res/', function(data) {
+            $('.video__bbox').html('')
+            if (data != '{}') {
+                let jsonData = JSON.parse(data.replace(/'/g,"\""))
+                let keysData = Object.keys(jsonData)
+                console.log(jsonData)
+                html = '';
+                keysData.forEach(key => {
+                    html += `<div class="bbox" style="left: ${(jsonData[key].bbox[0]*kWVideo)}px; top: ${(jsonData[key].bbox[1]*kHVideo)}px; width: ${(jsonData[key].bbox[2]*kWVideo)}px; height: ${(jsonData[key].bbox[3]*kHVideo)}px"></div>`
+                })
+                $('.video__bbox').html(html);
+                //console.log(keysData, jsonData);
+                if (data == "Unknown") {
+                    $('.shadow-failed').fadeIn(400);
+                    setTimeout(function () {
+                        $('.shadow-failed').fadeOut(100);
+                    }, 4000);
+                } else {
+                    $('.success__name span').html(data + ("Программист" ? "<br><i>" + "что то еще" + "</i>" : ""));
+                    $('.shadow-success').fadeIn(400);
+                    setTimeout(function () {
+                        $('.shadow-success').fadeOut(100);
+                    }, 4000);
+                }
+            }
+        }
+      );
+  },200);
+
+$(document).ready(function(){
+  $('.shadow').on('click', function(){
+    $(this).fadeOut(300);
+  })
+})
+  </script>
+
+</body>
+
+</html>

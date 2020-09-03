@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@100;200;300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=0.477"/>
+    <script src="{{ url_for('static', filename='vue.js') }}"></script>
+    <script src="{{ url_for('static', filename='axios.min.js') }}"></script>
+
+</head>
+<body>
+<div id="app">
+    <div class="container">
+        <div class="video__container">
+<!--            <div class="video_ik"><img src="{{ url_for('video_ir_feed') }}" alt=""></div>-->
+            <div class="video_ik"><img src="" alt=""></div>
+            <div class="video__bbox">
+                <div v-for="item in people" :key="item.id" :style="item.styleBbox" :class="[ 'bbox' , item.tClass]">
+                   <span>{{ '{{ item.t }}' }}</span>
+                </div>
+            </div>
+            <video autoplay playsinline class="handsome"></video>
+            <div class="access access--success"
+                 @click="showPopup"
+                 :class="{ active: accessPopup }">
+                <div class="access__message">{{ '{{ message }}' }}</div>
+                <span>{{ '{{ currentTime }}' }}</span>
+            </div>
+        </div>
+        <div class="message">
+            <div v-if="statusName === 'none'" class="message__kemsu">
+                <img src="{{ url_for('static', filename='img/kemsu_logo_white.svg') }}" alt="">
+            </div>
+            <div v-else-if="statusName === 'comein'" class="message__step message__step--comein">
+                <div class="message__avatar" :style="select.img"></div>
+                <div class="message__step__container">
+                    <div class="message__hello">Добро пожаловать,</div>
+                    <div class="message__name">{{ '{{ select.nameUser }}' }}</div>
+                    <div class="message__post">{{ '{{ select.post }}' }}</div>
+                </div>
+            </div>
+            <div v-else-if="statusName === 'notfound'" class="message__step message__step--notfound">
+                <div class="message__avatar"></div>
+                <div class="message__step__container">
+                    <div class="message__hello"></div>
+                    <div class="message__name">Попробуйте еще раз</div>
+                    <div class="message__hello">Или позвоните нам</div>
+                </div>
+            </div>
+            <div v-else-if="statusName === 'hightemp'" class="message__step message__step--hightemp">
+                <div class="message__avatar"></div>
+                <div class="message__step__container">
+                    <div class="message__name">{{ '{{ select.nameUser }}' }}</div>
+                    <div class="message__hello">У Вас высокая температура {{ '{{ select.t }}' }}°C</div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<canvas id="paint" style="display: none;"></canvas>
+<div class="strip"></div>
+
+<script>
+    var app = new Vue({
+        el: '#app',
+        data: {
+            bufPerson: null,
+            maxTemp: 37,
+            progressDelay: 500,
+            processGetPeople: null,
+            processPull: null,
+            video: false,
+            canvas: false,
+            ctx: false,
+            stream: false,
+            data: false,
+            people: [],
+            keysPeople: [],
+            isThermalOn: true,
+            select: null,
+            currentTime: 5,
+            timer: null,
+            message: null,
+            kW: 720/480,
+            kH: 960/640,
+            accessPopup: false,
+            statusObject: [
+                {
+                    name: 'comein',
+                    sound: '/static/sounds/sound_comein.mp3',
+                    message: 'Входите, пожалуйста'
+                },
+                {
+                    name: 'notfound',
+                    sound: '/static/sounds/sound_notfound.mp3',
+                    message: 'Пользователь не найден'
+                },
+                {
+                    name: 'hightemp',
+                    sound: '/static/sounds/sound_hightemp.mp3',
+                    message: 'Обнаружена высокая температура'
+                }
+            ],
+            statusName: 'none'
+        },
+        methods: {
+            async go () {
+                try {
+                    this.stream = await navigator.mediaDevices.getUserMedia({video: true});
+                    this.video.srcObject = this.stream
+                }
+                catch (e) {
+                    console.error(e.message)
+                }
+            },
+            pullServer() {
+                let xhr = new XMLHttpRequest();
+                xhr.open('POST', 'http://127.0.0.1:5000/pull/');
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.addEventListener('readystatechange', function() {
+                    //Проверим состояние запроса, нас интересует случай когда он завершен ( DONE )
+                    if (xhr.readyState === 4) {
+                        //Дальше проверим какой код ответа нам выдал сервер
+                        if (xhr.status === 200) {
+                            //Если попали сюда, значит можно выполнить функцию, которую вам нужно
+                            //callback();
+                        }
+                    }
+                }, false)
+                xhr.send(JSON.stringify(this.data))
+            },
+            takePhoto() {
+                this.processPull = setInterval(() => {
+                    this.canvas.width = this.video.videoWidth;
+                    this.canvas.height = this.video.videoHeight;
+                    this.ctx.drawImage(this.video, 0, 0, this.video.videoWidth, this.video.videoHeight);
+                    this.data = this.canvas.toDataURL('image/png');
+                    this.pullServer(this.data, false);
+                }, this.progressDelay)
+            },
+            getDataPeople() {
+                this.processGetPeople = setInterval(() => {
+                    axios
+                        .get('http://127.0.0.1:5000/get_res/')
+                        .then(response => {
+                            flag = 0
+                            this.people = []
+                            this.keysPeople = []
+                            if (response.data != '{}' && typeof response.data == 'string') {
+                                let jsonPeople = JSON.parse(response.data.replace(/'/g, "\""))
+                                this.keysPeople = Object.keys(jsonPeople)
+                                this.keysPeople.forEach((value) => {
+                                    if(jsonPeople[value].name != 'none' && jsonPeople[value].name && this.bufPerson != value) {
+                                        flag = 1
+                                        this.bufPerson = value
+                                        this.statusName = (jsonPeople[value].temp > this.maxTemp) ? 'hightemp' : 'comein'
+                                        this.select = {
+                                            nameUser: jsonPeople[value].name.initials,
+                                            post: jsonPeople[value].name.post,
+                                            img: { backgroundImage: `url('/static/photo/${jsonPeople[value].name.img}')`},
+                                            t: jsonPeople[value].temp
+                                        }
+                                        params = this.statusObject.filter(el => el.name === this.statusName)[0]
+                                        this.message = params.message
+                                        this.showPopup(params.sound)
+                                    }
+                                    if(!flag) {
+                                        this.people.push({
+                                            id: value,
+                                            t: jsonPeople[value].temp,
+                                            tClass: (!jsonPeople[value].temp) ? false : ((jsonPeople[value].temp > this.maxTemp) ? 'bbox--bad' : 'bbox--good'),
+                                            bbox: jsonPeople[value].bbox,
+                                            styleBbox: {
+                                                left: jsonPeople[value].bbox[0] * this.kW + 'px',
+                                                top: jsonPeople[value].bbox[1] * this.kH + 'px',
+                                                width: jsonPeople[value].bbox[2] * this.kW + 'px',
+                                                height: jsonPeople[value].bbox[3] * this.kH + 'px'
+                                            }
+                                        })
+                                    }
+                                })
+                                if(flag)  {
+                                    this.people = []
+                                    this.keysPeople = []
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            console.log(error);
+                        })
+                }, this.progressDelay)
+            },
+            startTimer() {
+                this.timer = setInterval(() => {
+                    if(!this.currentTime) this.stopTimer()
+                    this.currentTime--
+                }, 1000)
+            },
+            stopTimer() {
+                clearTimeout(this.timer)
+                this.accessPopup = false
+                this.statusName = 'none'
+                this.select = {}
+
+                this.takePhoto()
+                this.getDataPeople()
+                this.currentTime = 5
+
+            },
+            showPopup(audioUrl) {
+                this.stopProcess()
+                this.accessPopup = true
+                this.people = []
+                this.keysPeople = []
+                this.startTimer()
+                let audio = new Audio(audioUrl)
+                setTimeout(() => audio.play(), 1000)
+            },
+            stopProcess() {
+                clearTimeout(this.processGetPeople)
+                clearTimeout(this.processPull)
+            }
+        },
+        watch: {
+            bufPerson() {
+                setTimeout(() => {
+                    this.bufPerson = 'null'
+                }, 15000)
+
+            }
+        },
+        mounted: function() {
+            this.video = document.querySelector('.handsome')
+            this.canvas = document.querySelector('#paint')
+            this.ctx = this.canvas.getContext('2d')
+            this.go()
+
+            this.takePhoto()
+            setTimeout(() => {
+                container = document.querySelector('.video__container')
+                message = document.querySelector('.message')
+                this.video.style.height = container.offsetWidth+'px'
+                container.style.height = this.video.offsetWidth+'px'
+                this.video.style.marginTop = -container.offsetWidth/2+'px'
+                this.video.style.marginLeft = -container.offsetHeight/2+'px'
+                message.style.top = this.video.offsetWidth+'px'
+            }, 1000)
+            this.getDataPeople()
+        }
+    })
+</script>
+</body>
+
+</html>

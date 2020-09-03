@@ -1,0 +1,72 @@
+<html>
+  <head>
+    <title>Video Streaming Demonstration</title>
+  </head>
+  <body>
+  <style>
+    body, html {
+      position: relative;
+      overflow: hidden;
+      background-color: #333;
+      height: 100%;
+      min-height: 100vh;
+    }
+    .container {
+      position: absolute;
+      top: 0;
+      left:0;
+      bottom: 0;
+      right: 0;
+    }
+    .top {
+      position: relative;
+      height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+    }
+    .top__item, .stream {
+      position: relative;
+      height: 100%;
+      overflow: hidden;
+      background-position: 50% 50%;
+      background-size: cover;
+    }
+    .stream img {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      height: 100%;
+      transform: translateX(-50%);
+    }
+    .main {
+      height: 400px;
+      margin-top: 20px;
+      overflow: hidden;
+    }
+
+  </style>
+
+    <div class="container">
+      <div class="top">
+        <div class="top__item stream" style="background-image: url('{{ url_for('video_ir_feed') }}')">
+<!--          <h1>IR Камера</h1>-->
+<!--          <img src="{{ url_for('video_ir_feed') }}">-->
+        </div>
+        <div class="top__item stream" style="background-image: url('{{ url_for('video_bg_feed') }}')">
+<!--          <h1>Без фона на растоянии 1 метр</h1>-->
+<!--          <img src="{{ url_for('video_bg_feed') }}">-->
+        </div>
+        <div class="top__item stream" style="background-image: url('{{ url_for('video_frame_rgbd_feed') }}')">
+<!--          <h1>3д изображения</h1>-->
+<!--          <img src="{{ url_for('video_frame_rgbd_feed') }}">-->
+        </div>
+      </div>
+      <div class="main stream"  style="background-image: url('{{ url_for('video_feed') }}')">
+<!--        <h1>RGB Камера</h1>-->
+<!--        <img src="{{ url_for('video_feed') }}">-->
+      </div>
+    </div>
+
+  </body>
+</html>
