@@ -1,4 +1,4 @@
-from flask import Flask, render_template, Response, request,make_response
+from flask import render_template, request, make_response
 from PIL import Image
 from io import BytesIO
 import cv2
@@ -10,11 +10,11 @@ from app_face_recognition import app
 @app.route('/')
 def index():
     """Video streaming home page."""
-    return render_template('index.html')
+    return render_template('index.html', URL=app.config['ip_server'] + ':' + str(app.config['port']))
 
 ################################################################################################
 @app.route('/pull/', methods=['GET', 'POST'])
-def receipt_image_from_devices():
+def receipt_image_from_devices():  ## todo Проверить что то тут не так
     '''
     Принимает изображения с устройства
     :param id_devices:
@@ -32,7 +32,6 @@ def receipt_image_from_devices():
 
         app.config['queue'].put(opencvImage)
 
-
         return make_response("<h2>404 Error</h2>", 200)
 
     return render_template('index.html')
@@ -46,13 +45,8 @@ def pull_res_from_devices():
     :return:
     '''
     personID = app.config['recognition'].get_face_web()
-    # if len(personID) != 0:
-    #     personID['temp_face'] = 36.3
-    print("jdbasjbdkas",personID)
-    # return json.dumps(personID)
-    # personID = {'eb8aa305-76a7-4c41-8d64-90fb765e7ad9': {'bbox': [150, 116, 223, 223],
-    #                                           'name': 'Тимофеев Антон Евгеньевич::Главный менеджер проектов', 'temp': 36.5 },
-    #  'b9e1d2bc-ac4f-4b5b-bec3-fd586c8c3e49': {'bbox': [436, 219, 185, 185],
-    #                                           'name': 'Шумелев Дмитрий Игоревич::Программист 1 категории', 'temp': 36.7}}
-    return str(personID)
+    if not app.config['debug']:
+        print("push", json.dumps(personID))
+
+    return str(personID)  # todo return json.dumps(personID)
 

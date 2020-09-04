@@ -348,72 +348,65 @@ def branch_3():
     save_model(clf_svm, os.path.join(path_save_clf, "svm_model_" + pref + '.pk'))
     save_model(clf_knn, os.path.join(path_save_clf, "knn_model_" + pref + '.pk'))
 
+def ViverPhoto():
+    def load_image_people(pathPhoto):
+        def loadImage_pickl(path):
+            with open(path, 'rb') as f:
+                list_photo = pickle.load(f)
+            return list_photo
 
-#
-# def branch_4():
-#     '''
-#     вытаскивает из пикл файла пользователей и обучает нейросеть по ней только для RGBD изображений
-#     :return:
-#     '''
-#     from app_face_recognition.modul.neiro import Neiro_face
-#     neiro = Neiro_face(r'/home/dima/PycharmProjects/faseid_door/rs/dlib/model_1.0.h5')
-#     def load_image_people(pathPhoto):
-#         def loadImage_pickl(path):
-#             with open(path, 'rb') as f:
-#                 list_photo = pickle.load(f)
-#             return list_photo
-#
-#         list_people = os.listdir(pathPhoto)
-#         print("Количество пользователей в базе:", len(list_people))
-#         for people in list_people:
-#             listPhoto = loadImage_pickl(os.path.join(pathPhoto, people, 'RGB/photo.pickl'))
-#             print("Количество фото", len(listPhoto))
-#             for color_image, image_RGBD in listPhoto:
-#                 #cv2.imshow("photo", color_image)
-#                 # cv2.waitKey()
-#                 face_bounding_boxes = face_recognition.face_locations(color_image)
-#                 if len(face_bounding_boxes) != 1:
-#                     # если изображения не подходит.
-#                     print("Изображение не может учавствовать в трененровки: {}".format("Нет лица" if len(
-#                         face_bounding_boxes) < 1 else "Более одного лица"))
-#                 else:
-#                     # Доболяем изображения
-#
-#                     print(face_bounding_boxes)  #[(53, 153, 182, 24)]
-#
-#                     top, right, bottom, left = face_bounding_boxes[0]
-#
-#                     crop = image_RGBD[top:bottom,left:right]
-#                     print(crop.shape)
-#                     resize = cv2.resize(crop, (200,200))
-#
-#                     # cv2.imshow("crop", crop)
-#                     # cv2.imshow("resize", resize)
-#                     # cv2.waitKey()
-#                     #
-#                     descriptor = neiro.get_signs([resize])
-#                     #print(descriptor)
-#                     encodings.append(descriptor[0])  # 128 уникальных признаков
-#                     person_id.append(people)  # Уникальный ключ пользователя
-#
-#
-#         print("Загрузка данных завершена")
-#     pathPhoto = r'/home/dima/Документы/photoBR'
-#
-#     load_image_people(pathPhoto)
-#
-#     print('обучаем нейросети')
-#     clf_svm = train_cvm()
-#     clf_knn = train_knn()
-#     print("обучение завершено")
-#     # # Сохраняем данные
-#     path_save_clf = r'/rs'
-#     pref = str(3)
-#     save_model(clf_svm, os.path.join(path_save_clf, "svm_model_" + pref + '.pk'))
-#     save_model(clf_knn, os.path.join(path_save_clf, "knn_model_" + pref + '.pk'))
+        def addFace_by_classification(color_image, people):
+            '''
+            Добовляет пользователя для классификации
+            :param color_image:
+            :param people:
+            :return:
+            '''
+            face_bounding_boxes = face_recognition.face_locations(color_image)
+            if len(face_bounding_boxes) != 1:
+                # если изображения не подходит.
+                print("Изображение не может учавствовать в трененровки: {}".format("Нет лица" if len(
+                    face_bounding_boxes) < 1 else "Более одного лица"))
+            else:
+                # Доболяем изображения
+                encodings.append(face_recognition.face_encodings(color_image, known_face_locations=face_bounding_boxes)[
+                                     0])  # 128 уникальных признаков
+                person_id.append(people)  # Уникальный ключ пользователя
+
+                cv2.imshow("image", color_image)
+                cv2.waitKey()
+
+        list_people = os.listdir(pathPhoto)
+        print("Количество пользователей в базе:", len(list_people))
+        for people in list_people:
+            listRGBPhoto = os.listdir(os.path.join(pathPhoto, people, 'RGB'))
+            print("Кличество RGB фото: {}".format(len(listRGBPhoto)))
+            for namePhoto in listRGBPhoto:
+                if namePhoto == 'photo.png': continue
+                if namePhoto == 'photo.pickl': continue
+                color_image = cv2.imread(os.path.join(pathPhoto, people, 'RGB', namePhoto))
+                addFace_by_classification(color_image, people)
+            try:
+                listPhoto = loadImage_pickl(os.path.join(pathPhoto, people, 'RGB/photo.pickl'))
+            except BaseException as e:
+                print("error {}".format(e))
+            else:
+                print("Количество фото", len(listPhoto))
+                for color_image, image_RGBD in listPhoto:
+
+                    color_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
+                    addFace_by_classification(color_image, people)
+
+
+        print("Загрузка данных завершена")
+
+    pathPhoto = r'/home/dima/Документы/photoBR'
+
+    load_image_people(pathPhoto)
+
 
 if __name__ == '__main__':
-    branch_3()
+    ViverPhoto()
 
 
 

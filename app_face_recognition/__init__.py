@@ -16,6 +16,9 @@ pathProject_book = r'/home/dima/PycharmProjects'
 pathProject_jetson = r'//home/dima/project'
 app.config['debug'] = True
 
+app.config['ip_server'] = '192.168.0.221'
+app.config['port'] = '5000'
+
 #
 if os.path.isdir(pathProject_book):
     pathProject = pathProject_book
