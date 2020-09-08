@@ -33,6 +33,13 @@ class periphery(threading.Thread):
         self.button = digitalio.DigitalInOut(board.D4)
         self.button.direction = digitalio.Direction.INPUT
 
+        self.flag_door = False
+
+    def disable_door(self):
+        self.flag_door = True
+
+    def enable_door(self):
+        self.flag_door = False
 
     def __open_door(self):
         '''
@@ -48,7 +55,8 @@ class periphery(threading.Thread):
 
         :return:
         '''
-        self.rele.value = True
+        if not self.flag_door:
+            self.rele.value = True
         #print("close door")
 
     def is_door(self):
@@ -106,11 +114,37 @@ class periphery(threading.Thread):
 
 
 if __name__ == '__main__':
-    rele_pin = 9
-    button_pin = 25
-    test = periphery(rele_pin, button_pin)
-    test.start()
-    print("start")
+    import socket
+    door = periphery()
+    door.start()
+    print("старт дверь")
+
+    sock = socket.socket()
+    sock.bind(('', 9091))
+    while True:
+        sock.listen(1)
+        conn, addr = sock.accept()
+        print(conn)
+        while True:
+            data = conn.recv(1024)
+            if not data:
+                break
+
+            if data == b'open':
+                print("Открытия двери")
+                door.open_door()
+
+            if data == b'disable_door':
+                print("Дверь не активна")
+                door.disable_door()
+
+            if data == b'enable_door':
+                print("Дверь активирована")
+                door.enable_door()
+
+            conn.send(data)
+
+
 
 
 

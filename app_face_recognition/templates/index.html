@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@100;200;300;400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=0.477"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=0.479"/>
     <script src="{{ url_for('static', filename='vue.js') }}"></script>
     <script src="{{ url_for('static', filename='axios.min.js') }}"></script>
 
@@ -17,12 +17,14 @@
         <div class="video__container">
 
             <div class="video_ik"><img src="" alt=""></div>
-            <div class="video__bbox">
-                <div v-for="item in people" :key="item.id" :style="item.styleBbox" :class="[ 'bbox' , item.tClass]">
-                   <span>{{ '{{ item.t }}' }}</span>
+            <div class="video__flip">
+                <div class="video__bbox">
+                    <div v-for="item in people" :key="item.id" :style="item.styleBbox" :class="[ 'bbox' , item.tClass]">
+    <!--                   <span>{{ '{{ item.t }}' }}</span>-->
+                    </div>
                 </div>
+                <video autoplay playsinline class="handsome"></video>
             </div>
-            <video autoplay playsinline class="handsome"></video>
             <div class="access access--success"
                  @click="showPopup"
                  :class="{ active: accessPopup }">
@@ -72,6 +74,7 @@
             maxTemp: 37,
             progressDelay: 500,
             processGetPeople: null,
+            processBufPerson: null,
             processPull: null,
             video: false,
             canvas: false,
@@ -135,68 +138,79 @@
             },
             takePhoto() {
                 this.processPull = setInterval(() => {
-                    this.canvas.width = this.video.videoWidth;
-                    this.canvas.height = this.video.videoHeight;
-                    this.ctx.drawImage(this.video, 0, 0, this.video.videoWidth, this.video.videoHeight);
-                    this.data = this.canvas.toDataURL('image/png');
-                    this.pullServer(this.data, false);
+                    if(this.bufPerson == null) {
+                        this.canvas.width = this.video.videoWidth
+                        this.canvas.height = this.video.videoHeight
+                        this.ctx.drawImage(this.video, 0, 0, this.video.videoWidth, this.video.videoHeight)
+                        this.data = this.canvas.toDataURL('image/png')
+                        this.pullServer(this.data, false)
+                    }
                 }, this.progressDelay)
             },
             getDataPeople() {
                 this.processGetPeople = setInterval(() => {
-                    axios
-                        .get('https://{{ URL }}/get_res/')
-                        .then(response => {
-                            flag = 0
-                            this.people = []
-                            this.keysPeople = []
-                            if (response.data != '{}' && typeof response.data == 'string') {
-                                let jsonPeople = JSON.parse(response.data.replace(/'/g, "\""))
-                                this.keysPeople = Object.keys(jsonPeople)
-                                this.keysPeople.forEach((value) => {
-                                    if(jsonPeople[value].name != 'none' && jsonPeople[value].name && this.bufPerson != value) {
-                                        flag = 1
-                                        this.bufPerson = value
-                                        this.statusName = (jsonPeople[value].temp > this.maxTemp) ? 'hightemp' : 'comein'
-                                        this.select = {
-                                            nameUser: jsonPeople[value].name.initials,
-                                            post: jsonPeople[value].name.post,
-                                            img: { backgroundImage: `url('/static/photo/${jsonPeople[value].name.img}')`},
-                                            t: jsonPeople[value].temp
-                                        }
-                                        params = this.statusObject.filter(el => el.name === this.statusName)[0]
-                                        this.message = params.message
-                                        this.showPopup(params.sound)
-                                    }
-                                    if(!flag) {
-                                        this.people.push({
-                                            id: value,
-                                            t: jsonPeople[value].temp,
-                                            tClass: (!jsonPeople[value].temp) ? false : ((jsonPeople[value].temp > this.maxTemp) ? 'bbox--bad' : 'bbox--good'),
-                                            bbox: jsonPeople[value].bbox,
-                                            styleBbox: {
-                                                left: jsonPeople[value].bbox[0] * this.kW + 'px',
-                                                top: jsonPeople[value].bbox[1] * this.kH + 'px',
-                                                width: jsonPeople[value].bbox[2] * this.kW + 'px',
-                                                height: jsonPeople[value].bbox[3] * this.kH + 'px'
+                    if(this.bufPerson == null) {
+                        axios
+                            .get('https://{{ URL }}/get_res/')
+                            .then(response => {
+                                flag = 0
+                                this.people = []
+                                this.keysPeople = []
+                                //console.log(response.data)
+                                if (response.data != '{}' && typeof response.data == 'string') {
+                                    let jsonPeople = JSON.parse(response.data.replace(/'/g, "\""))
+                                    this.keysPeople = Object.keys(jsonPeople)
+                                    this.keysPeople.forEach((value) => {
+                                        console.log(value, this.bufPerson)
+                                        //if(jsonPeople[value].name != 'none' && jsonPeople[value].name && this.bufPerson != value) {
+                                        if(jsonPeople[value].name != 'none' && jsonPeople[value].name && this.bufPerson == null) {
+                                            // if(this.bufPerson != null) {
+                                            //     this.stopProcessBufPerson()
+                                            // }
+                                            flag = 1
+                                            this.bufPerson = value
+                                            this.clearBufPerson()
+                                            this.statusName = (jsonPeople[value].temp > this.maxTemp) ? 'hightemp' : 'comein'
+                                            this.select = {
+                                                nameUser: jsonPeople[value].name.initials,
+                                                post: jsonPeople[value].name.post,
+                                                img: { backgroundImage: `url('/static/photo/${jsonPeople[value].name.img}')`},
+                                                t: jsonPeople[value].temp
                                             }
-                                        })
+                                            params = this.statusObject.filter(el => el.name === this.statusName)[0]
+                                            this.message = params.message
+                                            this.showPopup(params.sound)
+                                        }
+                                        if(!flag) {
+                                            this.people.push({
+                                                id: value,
+                                                t: jsonPeople[value].temp,
+                                                tClass: (!jsonPeople[value].temp) ? false : ((jsonPeople[value].temp > this.maxTemp) ? 'bbox--bad' : 'bbox--good'),
+                                                bbox: jsonPeople[value].bbox,
+                                                styleBbox: {
+                                                    left: jsonPeople[value].bbox[0] * this.kW + 'px',
+                                                    top: jsonPeople[value].bbox[1] * this.kH + 'px',
+                                                    width: jsonPeople[value].bbox[2] * this.kW + 'px',
+                                                    height: jsonPeople[value].bbox[3] * this.kH + 'px'
+                                                }
+                                            })
+                                        }
+                                    })
+                                    if(flag)  {
+                                        this.people = []
+                                        this.keysPeople = []
                                     }
-                                })
-                                if(flag)  {
-                                    this.people = []
-                                    this.keysPeople = []
                                 }
-                            }
-                        })
-                        .catch(error => {
-                            console.log(error);
-                        })
-                }, this.progressDelay)
+                            })
+                            .catch(error => {
+                                console.log(error);
+                            })
+                        }
+                    }, this.progressDelay)
             },
             startTimer() {
                 this.timer = setInterval(() => {
-                    if(!this.currentTime) this.stopTimer()
+                    if(!this.currentTime || this.currentTime == 1) this.stopTimer()
                     this.currentTime--
                 }, 1000)
             },
@@ -205,11 +219,9 @@
                 this.accessPopup = false
                 this.statusName = 'none'
                 this.select = {}
-
-                this.takePhoto()
-                this.getDataPeople()
+                //this.takePhoto()
+                //this.getDataPeople()
                 this.currentTime = 5
-
             },
             showPopup(audioUrl) {
                 this.stopProcess()
@@ -221,18 +233,27 @@
                 setTimeout(() => audio.play(), 1000)
             },
             stopProcess() {
-                clearTimeout(this.processGetPeople)
-                clearTimeout(this.processPull)
+                //clearTimeout(this.processGetPeople)
+                //clearTimeout(this.processPull)
+            },
+            clearBufPerson() {
+                //if(this.processBufPerson) clearTimeout(this.processBufPerson)
+                this.processBufPerson = setTimeout(() => {
+                    this.bufPerson = null
+                }, 6000)
+            },
+            stopProcessBufPerson() {
+                clearTimeout(this.processBufPerson)
             }
         },
-        watch: {
-            bufPerson() {
-                setTimeout(() => {
-                    this.bufPerson = 'null'
-                }, 15000)
-
-            }
-        },
+        // watch: {
+        //     bufPerson() {
+        //         setTimeout(() => {
+        //             this.bufPerson = 'null'
+        //         }, 15000)
+        //
+        //     }
+        // },
         mounted: function() {
             this.video = document.querySelector('.handsome')
             this.canvas = document.querySelector('#paint')

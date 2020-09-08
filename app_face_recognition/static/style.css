@@ -24,7 +24,16 @@ video {
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: scaleX(-1) rotate(90deg);
+    /*transform: scaleX(-1) rotate(90deg);*/
+    transform: rotate(90deg);
+}
+.video__flip {
+    position: absolute;
+    top: 0;
+    left:0;
+    right: 0;
+    bottom: 0;
+    transform: scaleX(-1);
 }
 .video_ik {
     position: absolute;

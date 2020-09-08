@@ -333,7 +333,7 @@ def branch_3():
 
         print("Загрузка данных завершена")
 
-    pathPhoto = r'/home/dima/project/photoBR'
+    pathPhoto = r'/home/dima/Документы/photoBR'
 
     load_image_people(pathPhoto)
 
@@ -343,7 +343,7 @@ def branch_3():
     print("обучение завершено")
     # # Сохраняем данные
     # path_save_clf = r'/home/dima/PycharmProjects/faseid_door/rs'
-    path_save_clf = r'/home/dima/project/faseid_door/rs'
+    path_save_clf = r'/home/dima/PycharmProjects/faseid_door/rs'
     pref = str(1)
     save_model(clf_svm, os.path.join(path_save_clf, "svm_model_" + pref + '.pk'))
     save_model(clf_knn, os.path.join(path_save_clf, "knn_model_" + pref + '.pk'))
@@ -406,8 +406,8 @@ def ViverPhoto():
 
 
 if __name__ == '__main__':
-    ViverPhoto()
-
+    branch_3()
+    # ViverPhoto()
 
 
 

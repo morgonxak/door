@@ -4,6 +4,7 @@
 import threading
 import face_recognition
 import cv2
+import socket
 
 from app_face_recognition.modul.periphery import periphery
 from app_face_recognition.modul.dict_user import known_face_names
@@ -11,7 +12,7 @@ from app_face_recognition.modul.dict_user import known_face_names
 
 class processing_faceid(threading.Thread):
 
-    def __init__(self, queue, model_cvm, model_knn, face_detector, path_madel, door: periphery):
+    def __init__(self, queue, model_cvm, model_knn, face_detector, path_madel):
         '''
 
         :param queue: Задания
@@ -22,7 +23,7 @@ class processing_faceid(threading.Thread):
         :param door:
         '''
         super().__init__()
-        self.queue, self.model_cvm, self.model_knn, self.face_detector, self.path_madel, self.door = queue, model_cvm, model_knn, face_detector, path_madel, door
+        self.queue, self.model_cvm, self.model_knn, self.face_detector, self.path_madel= queue, model_cvm, model_knn, face_detector, path_madel
         self.dict_res = {}
 
 
@@ -97,10 +98,16 @@ class processing_faceid(threading.Thread):
         Открывает дверь
         :return:
         '''
-        if not self.door is None:
-            self.door.open_door()
-        else:
-            print("ОТкрытия двери")
+        try:
+            sock = socket.socket()
+            sock.connect(('192.168.0.196', 9091))
+
+            sock.send(bytes('open', encoding='utf8'))
+            data = sock.recv(1024)
+            sock.close()
+        except BaseException as e:
+            print("error open door {}".format(e))
+
 
 
     def run(self):
